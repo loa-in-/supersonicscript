@@ -1,0 +1,48 @@
+#!/usr/bin/bash
+
+programname=$(basename $0)
+
+function usage() {
+cat << USAGEHELP
+Usage: $programname [pick|edit]
+
+Description:
+  run a random game, or pick one yourself if "pick" keyword argument specified
+
+
+Created by Supersonic Tumbleweed AD 2018
+USAGEHELP
+}
+
+if [[ $# > 1 ]]; then
+  usage
+  exit 1
+fi
+
+gamelist=/home/rne/useful/lists/games
+
+if [[ $# == 1 ]]; then
+  if [[ "$1" == "pick" ]]; then
+    choice=$(cat <(cat $gamelist) <(echo Anuluj) | fzf)
+    if [[ "$choice" == "Anuluj" ]]; then
+      echo Anulowano
+      exit 0
+    fi
+  elif [[ "$1" == "edit" ]]; then
+    $EDITOR $gamelist
+    exit 0
+  else
+    usage
+    exit 1
+  fi
+fi
+
+if [[ ! -v choice ]]; then
+  choice=$(shuf -n1 $gamelist)
+fi
+
+displayname=`expr "$choice" : '.*#\(.*\)'`
+
+echo Uruchamianie $displayname ...
+sleep 3
+eval $choice

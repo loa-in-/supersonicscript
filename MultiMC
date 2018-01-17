@@ -1,0 +1,4 @@
+#!/bin/env bash
+cd ~rne/ArchivePobrane/MultiMC
+./MultiMC
+

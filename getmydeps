@@ -1,0 +1,118 @@
+#!/usr/bin/bash
+progname=getmydeps
+configdir=$HOME/.$progname
+##
+## Program GetMyDeps
+##  powstał 9 XII 2017
+##
+##
+
+function usage() {
+cat << USAGEHELP
+Usage: $(basename $0)
+       Takes no arguments (i.e. is an interactive program)
+Description:
+  Allows for fuzzy search enchanced resolution of dependencies with manual input.
+
+Requires fzf installed.
+
+Uses EDITOR variable.
+
+created by Supersonic Tumbleweed AD 2018
+USAGEHELP
+}
+
+function interactive() {
+  cd $configdir
+
+  cat options.menu | fzf --multi --print-query
+
+  #sudo dnf -y install $(cat install-list)
+  exit 0
+}
+
+
+function update_cache() {
+
+  cd $configdir
+
+  arch_regex=\.\(x86_64\|noarch\|i686\)
+  package_regex=^.+?\(\..+?\)*
+  package_arch_regex=$package_regex$arch_regex
+
+
+  for category in installed available; do
+    echo \(Re\)Building $category cache...
+    
+    dnf -C list $category 2>/dev/null 1>$category.out
+  
+    echo Processing $category entries...
+
+    #strip first two lines and extract package identifiers
+    cat $category.out | sed -e '1,2d' | grep -oP ^[^\\s]+ | grep -Po ^.+?\(\.[^\\s]+\)+ > $category.packages
+
+    #strip architecture info
+    cat $category.packages | sed -e 's/\.[^\.]*$//g' | sort | uniq  > $category.pkgnames
+
+  done
+
+  grep -Fvf installed.pkgnames available.pkgnames > can_be_installed.pkgnames
+
+  (
+  cat installed.pkgnames        | sed -e 's/^/installed /g' 
+  cat can_be_installed.pkgnames | sed -e 's/^/unmarked /g'
+  ) > options.menu
+
+  echo Cache ready!
+  exit 0
+}
+
+
+function first_time_use() {
+  cat <<TUTORIAL
+I see this is probably your first time using $progname.
+Be sure to check out help by running  $progname --help
+I will now create first cache and exit.
+TUTORIAL
+  echo Installing in $configdir
+  mkdir -p $configdir
+  update_cache
+}
+
+
+if [[ $# > 1 ]]; then
+  usage
+  exit 1
+fi
+# Check if the program is installed. If not, install.
+if [ ! -d $configdir ]; then
+  echo Installation directory not found. Do not worry. It is just some text files.
+  first_time_use
+fi
+
+if [[ $# == 0 ]]; then
+  which fzf >/dev/null 2>/dev/null
+  if [ $? == 1 ]; then
+    echo fzf is not installed. Aborting
+    exit 1
+  fi
+  interactive
+  exit 0
+fi
+
+# with exactly one argument
+action=$1
+case "$action" in
+  "--help"  ) ;&
+  "-h"      ) ;&
+  "usage"   )
+    usage
+  ;;
+  "--update") ;&
+  "-u"      ) ;&
+  "update"  )
+    update_cache
+  ;;
+esac
+exit 0
+

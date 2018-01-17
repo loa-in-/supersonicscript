@@ -1,0 +1,22 @@
+#!/usr/bin/bash
+
+programname=$(basename $0)
+
+function usage() {
+cat << USAGEHELP
+Usage: $programname [arguments]
+
+  Description:
+
+
+Created by Supersonic Tumbleweed AD 2018
+USAGEHELP
+}
+
+if [[ $# == 0 ]]; then
+  usage
+  exit 1
+else
+  usage
+  exit 1
+fi

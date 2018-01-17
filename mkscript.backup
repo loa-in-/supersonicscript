@@ -1,0 +1,57 @@
+#!/bin/env bash
+
+progname=mkscript
+
+function usage() {
+  cat <<HELPSTRING
+$0 <scriptname>
+Creates or edits a script to be placed on local PATH
+Adds a proper hashbang and execute permissions
+By default places scripts in ~/.local/bin
+HELPSTRING
+}
+
+if [[ $# == 0 ]]; then
+  usage
+  echo Error: not enough arguments passed
+  exit
+fi
+
+state_editedself=no
+
+cd
+savedir=$HOME/.local/bin/
+cd $savedir
+filepath=$savedir$1
+filename=$1
+while shift; do
+  if [[ x$filename == xmkscript ]]; then
+    cp $filename $filename.replacement
+    cp $filename $filename.backup
+    $EDITOR $filename.replacement
+    state_editedself=yes
+    continue
+  fi
+  if [ ! -e $filename ]; then
+    touch $filename
+    cat .script-template >> $filename
+    echo Stworzono plik $filepath
+  fi
+  if [ ! -x $filename ]; then
+    chmod +x $filename
+    echo Ustawiono bit executable pliku $filepath
+  fi
+  $EDITOR $filename
+  if [ ! -s $filename ]; then
+    echo Plik $filepath jest pusty!
+    rm -i $filename
+  fi
+  filepath=$savedir$1
+  filename=$1
+done
+
+if [[ x$state_editedself==xyes ]]; then
+  cd $savedir
+  echo Zapisać zmiany w $progname?
+  test -e $progname.replacement && mv -i $progname.replacement $progname || rm -i $progname
+fi

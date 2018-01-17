@@ -1,0 +1,97 @@
+#!/usr/bin/bash
+
+programname=$(basename $0)
+
+function usage() {
+cat << USAGEHELP
+Usage: $programname (echo|display) [if] <expression> []]]]
+
+Description:
+  A more natural sounding test expressions for bash.
+
+  Typical usage: (assuming pid 1000 is dead, pid 1234 is alive)
+    [[[ pid 1234 [is] (running|killed|alive)    ]]] && echo Process 1234 is running!
+    [[[ pid 1234 [is] (stopped|killed|dead)     ]]] && echo Process 1234 is not running!
+    [[[ (echo|display)    pid 1234 [is] running ]]] # outputs: PID 1234 is running
+    [[[ (echo|display)    pid 1000 [is] running ]]] # outputs: PID 1000 is not running
+    [[[ (echo|display) if pid 1000 [is] running ]]] # outputs nothing
+    [[[ (echo|display) if pid 1234 [is] running ]]] # outputs: PID 1234 is running
+
+Created by Supersonic Tumbleweed AD 2018
+USAGEHELP
+}
+
+if [[ $# == 0 ]]; then
+  usage
+  exit 1
+fi
+
+function parse_expr() {
+  displayit=no
+
+  case "$1" in
+    echo|display|show)
+      displayit=yes
+      shift
+      if [[ "$1" == "if" ]]; then
+        displayit=conditional
+        shift
+      fi
+    ;;
+  esac
+
+  if [ "$#" == "0" ]; then syntax_error No condition specified; fi
+
+  case "$1" in
+    pid)
+      shift
+      if [ "$#" == "0" ]; then syntax_error Process PID number must be given; fi
+      target_process_id="$1"
+      shift
+      if [ "$#" == "0" ]; then syntax_error Condition must specify a process state to check for; fi
+      if [ "$1" == "is" ]; then shift; fi
+      kill -0 $target_process_id > /dev/null 2>&1
+      target_alive=$?
+      case "$1" in
+        exists|running|alive)
+          exit_code=$target_alive
+        ;;
+        stopped|killed|dead)
+          if [[ "$target_alive" == "0" ]]; then
+            exit_code=1
+          else
+            exit_code=0
+          fi
+        ;;
+        *)
+          syntax_error Invalid status for process: $1
+        ;;
+      esac
+      condition=$1
+      shift
+      if [ "$1" != "]]]" ]; then syntax_error Missing ]]] ; fi
+      # Parsing done, executing
+      case "$displayit" in
+        yes)
+          [ "$exit_code" == "1" ] && interject="not "
+          echo PID $target_process_id is $interject$condition
+        ;;
+        conditional)
+          [ "$exit_code" == "0" ] && echo PID $process_id is $condition
+        ;;
+      esac
+
+      exit $exit_code
+    ;;
+    *)
+      syntax_error Invalid condition: "$*"
+    ;;
+  esac
+}
+
+function syntax_error() {
+  echo SYNTAX ERROR: $*
+  exit 1
+}
+
+parse_expr $*
