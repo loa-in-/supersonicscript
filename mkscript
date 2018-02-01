@@ -41,13 +41,20 @@ while shift; do
     echo Ustawiono bit executable pliku $savedir$filename
   fi
   if [ ! -e $linkdir$filename ]; then
-    ln -s $filename $linkdir$filename
+    ln -s $savedir$filename $linkdir$filename
     echo Stworzono dowiązanie w $linkdir
   fi
   $EDITOR $filename
   if [ ! -s $filename ]; then
     echo Plik $savedir$filename jest pusty!
     rm -i $filename
+    if [ ! -f $filename ]; then
+      echo Plik usunięty.
+      if [ -L $linkdir$filename ]; then
+        rm $linkdir$filename
+        echo Dowiązanie w $linkdir usunięte.
+      fi
+    fi
   fi
   filename=$1
 done

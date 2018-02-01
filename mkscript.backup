@@ -17,41 +17,44 @@ if [[ $# == 0 ]]; then
   exit
 fi
 
-state_editedself=no
-
-cd
-savedir=$HOME/.local/bin/
+linkdir=$HOME/.local/bin/
+savedir=$HOME/useful/scripts/
 cd $savedir
-filepath=$savedir$1
 filename=$1
 while shift; do
-  if [[ x$filename == xmkscript ]]; then
-    cp $filename $filename.replacement
-    cp $filename $filename.backup
+  if [[ $filename == $progname ]]; then
+    cp -f $filename $filename.replacement
+    cp -f $filename $filename.backup
     $EDITOR $filename.replacement
-    state_editedself=yes
-    continue
+    echo Zapisać zmiany w $savedir$filename?
+    mv -i $filename.replacement $filename 
+    exit 0
+    break
   fi
   if [ ! -e $filename ]; then
     touch $filename
     cat .script-template >> $filename
-    echo Stworzono plik $filepath
+    echo Stworzono plik $savedir$filename
   fi
   if [ ! -x $filename ]; then
     chmod +x $filename
-    echo Ustawiono bit executable pliku $filepath
+    echo Ustawiono bit executable pliku $savedir$filename
+  fi
+  if [ ! -e $linkdir$filename ]; then
+    ln -s $savedir$filename $linkdir$filename
+    echo Stworzono dowiązanie w $linkdir
   fi
   $EDITOR $filename
   if [ ! -s $filename ]; then
-    echo Plik $filepath jest pusty!
+    echo Plik $savedir$filename jest pusty!
     rm -i $filename
+    if [ ! -f $filename ]; then
+      echo Plik usunięty.
+      if [ -L $linkdir$filename ]; then
+        rm $linkdir$filename
+        echo Dowiązanie w $linkdir usunięte.
+      fi
+    fi
   fi
-  filepath=$savedir$1
   filename=$1
 done
-
-if [[ x$state_editedself==xyes ]]; then
-  cd $savedir
-  echo Zapisać zmiany w $progname?
-  test -e $progname.replacement && mv -i $progname.replacement $progname || rm -i $progname
-fi

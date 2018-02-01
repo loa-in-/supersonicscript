@@ -4,10 +4,10 @@ programname=$(basename $0)
 
 function usage() {
 cat << USAGEHELP
-Usage: $programname [pick|edit]
+Usage: $programname [random|edit]
 
 Description:
-  run a random game, or pick one yourself if "pick" keyword argument specified
+  pick a game, or run a random one if "random" keyword argument specified
 
 
 Created by Supersonic Tumbleweed AD 2018
@@ -21,13 +21,20 @@ fi
 
 gamelist=/home/rne/useful/lists/games
 
+function random_game() {
+  shuf -n1 $gamelist
+}
+
+function choose_game() {
+  choice=$(cat <(cat $gamelist) <(echo Anuluj) | fzf)
+  if [[ "$choice" != "Anuluj" ]]; then
+    echo $choice
+  fi
+}
+
 if [[ $# == 1 ]]; then
-  if [[ "$1" == "pick" ]]; then
-    choice=$(cat <(cat $gamelist) <(echo Anuluj) | fzf)
-    if [[ "$choice" == "Anuluj" ]]; then
-      echo Anulowano
-      exit 0
-    fi
+  if [[ "$1" == "random" ]]; then
+    game=$(random_game)
   elif [[ "$1" == "edit" ]]; then
     $EDITOR $gamelist
     exit 0
@@ -38,11 +45,15 @@ if [[ $# == 1 ]]; then
 fi
 
 if [[ ! -v choice ]]; then
-  choice=$(shuf -n1 $gamelist)
+  game=$(choose_game)
+  if [ -z "$game" ]; then
+    echo Anulowano
+    exit 0
+  fi
 fi
 
-displayname=`expr "$choice" : '.*#\(.*\)'`
+displayname=`expr "$game" : '.*#\(.*\)'`
 
 echo Uruchamianie $displayname ...
 sleep 3
-eval $choice
+eval $game

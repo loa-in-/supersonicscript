@@ -1,0 +1,24 @@
+#!/usr/bin/bash
+
+programname=$(basename $0)
+
+function usage() {
+cat << USAGEHELP
+Usage: $programname <keyword>
+
+  Description:
+    Search Fedora repositories for keyword, then browse and select packages you want.
+    By default fzf uses TAB key to select entries. Afterwards press enter to proceed.
+    This utility does not produce output on stdout unless dnf fails.
+
+Created by Supersonic Tumbleweed AD 2018
+USAGEHELP
+}
+
+if [[ $# == 0 ]]; then
+  usage
+  exit 1
+fi
+
+sudo dnf -C search $1 | tail -n+3 | grep -v i686 | ifne fzf -m | ifne cut -d: -f1 -s | ifne xargs -n50 chronic sudo dnf install
+

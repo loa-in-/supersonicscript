@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+
+programname=$(basename $0)
+
+function usage() {
+cat << USAGEHELP
+Usage: $programname
+
+  Description:
+    Runs firefox if not running already,
+    else brings existing instance to the top
+
+Created by Supersonic Tumbleweed AD 2018
+USAGEHELP
+}
+
+xdotool search --classname Navigator windowactivate || exec firefox $*
