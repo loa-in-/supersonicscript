@@ -20,5 +20,15 @@ if [[ $# == 0 ]]; then
   exit 1
 fi
 
-sudo dnf -C search $1 | tail -n+3 | grep -v i686 | ifne fzf -m | ifne cut -d: -f1 -s | ifne xargs -n50 chronic sudo dnf install
+# create a temporary named pipe
+PIPE=$(mktemp -u)
+mkfifo $PIPE
+
+function cleanup() {
+  rm $PIPE
+}
+trap cleanup EXIT
+
+(linecount=$(cat $PIPE | wc -l); echo Wybrano $linecount pakietów ) &
+sudo dnf -C search $1 | tail -n+3 | grep -v i686 | ifne fzf -m | ifne cut -d: -f1 -s | tee $PIPE | ifne xargs -n50 chronic sudo dnf install
 
